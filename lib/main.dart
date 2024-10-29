@@ -31,12 +31,34 @@ class MyAppState extends ChangeNotifier {
 
   GlobalKey? historyListKey;
 
+  //Get next word
   void getNext() {
     history.insert(0, currentWord);
     var animatedList = historyListKey?.currentState as AnimatedListState?;
     animatedList?.insertItem(0);
     currentWord = WordPair.random();
     notifyListeners();
+  }
+
+  //get previous word
+  void getPrevious() {
+    if (history.isNotEmpty) {
+      var animatedList = historyListKey?.currentState as AnimatedListState?;
+      if (animatedList != null && history.isNotEmpty) {
+        currentWord = history.first;
+        var removedItem = history.removeAt(0);
+        animatedList.removeItem(
+          0,
+          (context, animation) => SizeTransition(
+            sizeFactor: animation,
+            child: Center(
+              child: Text(removedItem.asPascalCase),
+            ),
+          ),
+        );
+      }
+      notifyListeners();
+    }
   }
 
   var favorites = <WordPair>[];
@@ -60,7 +82,9 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
-//Pages 
+//Pages ------------
+
+//Standard page
 class MyHomePage extends StatefulWidget {
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -92,7 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
             children: [
               SafeArea(
                 child: NavigationRail(
-                  extended: constraints.maxWidth >= 600,
+                  extended: constraints.maxWidth >= 800,
                   destinations: [
                     NavigationRailDestination(
                       icon: Icon(Icons.home),
@@ -125,6 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+//Homepage
 class GeneratorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -164,19 +189,20 @@ class GeneratorPage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                BigCard(pair: pair),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PreviousButton(appState: appState),
+                    SizedBox(width: 20),
+                    BigCard(pair: pair),
+                    SizedBox(width: 20),
+                    NextButton(appState: appState),
+                  ]
+                ),
                 SizedBox(height: 15),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        appState.toggleFavorite(pair);
-                      },
-                      icon: Icon(icon),
-                      label: Text('Like'),
-                    ),
-                    SizedBox(width: 20),
                     //Like previous
                     ElevatedButton.icon(
                       onPressed: (){
@@ -186,7 +212,14 @@ class GeneratorPage extends StatelessWidget {
                       icon: Icon(prevIcon),
                     ),
                     SizedBox(width: 20),
-                    NextButton(appState: appState),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        appState.toggleFavorite(pair);
+                      },
+                      icon: Icon(icon),
+                      label: Text('Like'),
+                    ),
+                    SizedBox(width: 20),
                   ],
                 ),
                 SizedBox(height: 20,)
@@ -199,6 +232,7 @@ class GeneratorPage extends StatelessWidget {
   }
 }
 
+//History list
 class HistoryListView extends StatefulWidget {
   const HistoryListView({super.key});
 
@@ -254,7 +288,7 @@ class _HistoryListViewState extends State<HistoryListView> {
   }
 }
 
-
+//Favorite page 
 class FavoritesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -310,7 +344,8 @@ class FavoritesPage extends StatelessWidget {
   }
 }
 
-//Items
+//Items -----------
+//Next word button
 class NextButton extends StatelessWidget {
   const NextButton({
     super.key,
@@ -333,6 +368,35 @@ class NextButton extends StatelessWidget {
       },
       child: Text(
         'Next',
+        style: style,
+      ),
+    );
+  }
+}
+
+//Previous button
+class PreviousButton extends StatelessWidget {
+  const PreviousButton({
+    super.key,
+    required this.appState,
+  });
+
+  final MyAppState appState;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.displaySmall!.copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: theme.colorScheme.primary
+    );
+    return ElevatedButton(
+      onPressed: () {
+        appState.getPrevious();
+      },
+      child: Text(
+        'Previous',
         style: style,
       ),
     );
